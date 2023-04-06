@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from dynamic_template.models import Template
+from dynamic_template.models import OutbondRequest, Template
 from dynamic_template.validators import JSONSchemaValidator
 
 
@@ -15,11 +15,14 @@ class RequestSerializer(serializers.Serializer):
         return self.validated_data
 
     def create(self, validated_data):
-        for outbond_request in self.instance.requests.all():
-            response = outbond_request.outbond(validated_data["data"])
-            if not response:
-                self.validated_data[
-                    outbond_request.url
-                ] = "Something went wrong calling it."
+        data = validated_data["data"]
+        request = self.context["request"]
+
+        for outbond in self.instance.requests.all():
+            message = outbond.outbond(data)
+
+            OutbondRequest.objects.create(
+                outbond=outbond, user=request.user, data=message, data_before=data
+            )
 
         return None

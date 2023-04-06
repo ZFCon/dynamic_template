@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from dynamic_template.models import (
+    Outbond,
     OutbondRequest,
     Template,
     TemplateField,
@@ -30,15 +31,15 @@ class TemplateFieldInline(admin.StackedInline):
     )
 
 
-class OutbondRequestInline(admin.StackedInline):
-    model = OutbondRequest
+class OutbondInline(admin.StackedInline):
+    model = Outbond
     extra = 0
     min_num = 1
 
 
 @admin.register(Template)
 class TemplateAdmin(admin.ModelAdmin):
-    inlines = (TemplateFieldInline, OutbondRequestInline)
+    inlines = (TemplateFieldInline, OutbondInline)
 
 
 @admin.register(TemplateField)
@@ -99,3 +100,8 @@ class TemplateFieldAdmin(admin.ModelAdmin):
             },
         ),
     )
+
+
+@admin.register(OutbondRequest)
+class OutbondRequestAdmin(admin.ModelAdmin):
+    pass

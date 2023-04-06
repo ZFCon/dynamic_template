@@ -1,6 +1,7 @@
 import logging
 
 import requests
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -131,7 +132,7 @@ class TemplateField(TemplateFieldAbstract):
         verbose_name_plural = "Fields"
 
 
-class OutbondRequest(models.Model):
+class Outbond(models.Model):
     template = models.ForeignKey(
         "dynamic_template.Template", on_delete=models.CASCADE, related_name="requests"
     )
@@ -155,37 +156,50 @@ class OutbondRequest(models.Model):
     def get_payload(self, data):
         return self.template.data_map(data, self.payload_format)
 
-    def outbond(self, data):
+    def outbond(self, data) -> str:
         # TODO: implement celery here for more effection request and retry ability.
         try:
             response = requests.post(
                 self.url, data=self.get_payload(data), headers=self.headers, timeout=30
             )
-            return response
+            return response.text
         except requests.exceptions.HTTPError as error:
             logger.error(
-                "OutbondRequest HTTP error occurred: %s",
+                "Outbond HTTP error occurred: %s",
                 error,
                 extra={
                     "pk": self.pk,
                     "url": self.url,
                 },
             )
+            return error
         except requests.exceptions.ConnectTimeout as error:
             logger.error(
-                "OutbondRequest Timeout error occurred: %s",
+                "Outbond Timeout error occurred: %s",
                 error,
                 extra={
                     "pk": self.pk,
                     "url": self.url,
                 },
             )
+            return error
         except requests.exceptions.ConnectionError as error:
             logger.error(
-                "OutbondRequest Connection error occurred: %s",
+                "Outbond Connection error occurred: %s",
                 error,
                 extra={
                     "pk": self.pk,
                     "url": self.url,
                 },
             )
+            return error
+
+
+class OutbondRequest(models.Model):
+    outbond = models.ForeignKey("dynamic_template.Outbond", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    data = models.TextField()
+    data_before = models.JSONField()
+
+    def __str__(self) -> str:
+        return f"user: {self.user} to outbond: {self.outbond}"

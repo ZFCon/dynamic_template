@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -7,13 +8,16 @@ from dynamic_template.factories import (
     TemplateFieldFactory,
     TemplateNestedFieldFactory,
 )
-from dynamic_template.models import OutbondRequest, TemplateField
+from dynamic_template.models import Outbond, OutbondRequest, TemplateField
 
 
 class RequestTest(APITestCase):
     def setUp(self) -> None:
         self.template = TemplateFactory.create()
-        self.outbond_request = OutbondRequest.objects.create(
+        self.user = User.objects.create_user(
+            username="testuser", email="testuser@example.com", password="testpass"
+        )
+        self.outbond = Outbond.objects.create(
             template=self.template, url="https://inventory.example.com/api/update"
         )
         TemplateFieldFactory.create(
@@ -40,6 +44,7 @@ class RequestTest(APITestCase):
         )
 
     def test_create_event(self):
+        self.client.force_authenticate(user=self.user)
         url = reverse("dynamic_template:requests", args=(self.template.pk,))
         valid_data = {
             "data": {
@@ -51,7 +56,7 @@ class RequestTest(APITestCase):
         response = self.client.post(url, valid_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertDictEqual(response.data["data"], valid_data["data"])
-        self.assertIsNotNone(response.data.get(self.outbond_request.url))
+        self.assertEqual(OutbondRequest.objects.count(), 1)
 
         invalid_data = {
             "data": {
@@ -62,4 +67,3 @@ class RequestTest(APITestCase):
         }
         response = self.client.post(url, invalid_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIsNone(response.data.get(self.outbond_request.url))

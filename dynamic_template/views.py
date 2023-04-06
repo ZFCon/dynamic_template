@@ -1,5 +1,6 @@
 from rest_framework import status
 from rest_framework.generics import GenericAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from dynamic_template.models import Template
@@ -7,6 +8,7 @@ from dynamic_template.serializers import RequestSerializer
 
 
 class RequestAPIView(GenericAPIView):
+    permission_classes = (IsAuthenticated,)
     queryset = Template.objects.get_queryset()
     serializer_class = RequestSerializer
 
