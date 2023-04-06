@@ -10,11 +10,11 @@ class TemplateFieldAbstract(models.Model):
 
     @property
     def type(self) -> str:
-        raise NotImplemented
+        ...
 
     @property
     def schema(self) -> dict:
-        raise NotImplemented
+        ...
 
     def __str__(self) -> str:
         return f"{self.name}({self.type})"
