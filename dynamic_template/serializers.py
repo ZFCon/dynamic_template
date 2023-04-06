@@ -12,7 +12,7 @@ class RequestSerializer(serializers.Serializer):
 
     def __init__(self, instance: Template, data=..., **kwargs):
         super().__init__(instance, data, **kwargs)
-        self.fields["data"].validators.append(JSONSchemaValidator(instance.data_format))
+        self.fields["data"].validators.append(JSONSchemaValidator(instance.schema))
 
     def to_representation(self, instance):
         return self.initial_data

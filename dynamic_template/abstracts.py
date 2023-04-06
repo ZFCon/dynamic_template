@@ -14,7 +14,18 @@ class TemplateFieldAbstract(models.Model):
 
     @property
     def schema(self) -> dict:
-        ...
+        return {
+            "type": self.type,
+        }
 
     def __str__(self) -> str:
         return f"{self.name}({self.type})"
+
+
+class TemplateFieldQuerySetAbstract(models.QuerySet):
+    def get_schema(self) -> dict:
+        schema = {}
+        for field in self:
+            schema[field.name] = field.schema
+
+        return schema
