@@ -75,7 +75,7 @@ class TemplateField(TemplateFieldAbstract):
                 [int(choice) for choice in self.choices]
             except ValueError:
                 raise ValidationError(
-                    "Make sure choice are the same type(Number) as type field with no spaces."
+                    "Make sure choices are the same type(Number) as type field with no spaces."
                 )
 
         return super().clean()
