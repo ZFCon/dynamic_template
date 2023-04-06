@@ -66,6 +66,7 @@ class TemplateNestedField(TemplateFieldAbstract):
 
 
 class TemplateField(TemplateFieldAbstract):
+    # We could implement more types in the feature in spirit them into class field.
     class Type(models.TextChoices):
         NUMBER = "integer", "Number"
         CHAR = "string", "Char"
@@ -88,6 +89,7 @@ class TemplateField(TemplateFieldAbstract):
         default=["example", "anotherexample"],
         help_text="Don't use unwanted spaces.",
     )
+    # TODO: Add validation array with pre defined types of validation.
 
     objects = TemplateFieldQuerySetAbstract.as_manager()
 
