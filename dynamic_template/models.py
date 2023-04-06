@@ -17,10 +17,9 @@ class Template(models.Model):
     @property
     def schema(self) -> dict:
         fields_schema = {**self.fields.get_schema(), **self.nested_fields.get_schema()}
-        fields_name = [field.name for field in self.fields.all()] + [
+        fields_name = [field.name for field in self.fields.filter(nested_id=None)] + [
             field.name for field in self.nested_fields.all()
         ]
-
         return {
             "$schema": "http://json-schema.org/draft-07/schema#",
             "type": "object",
