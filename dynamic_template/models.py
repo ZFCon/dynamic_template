@@ -42,5 +42,6 @@ EXAMPLE_DATA = {
 
 class Template(models.Model):
     data_format = models.JSONField(
-        help_text="You should use http://json-schema.org to create the format for the expected data."
+        default=EXAMPLE_SCHEMA,
+        help_text="To learn more about json-schema visit http://json-schema.org",
     )
