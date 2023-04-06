@@ -7,51 +7,12 @@ from dynamic_template.abstracts import (
     TemplateFieldQuerySetAbstract,
 )
 
-EXAMPLE_SCHEMA = {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "properties": {
-        "userId": {
-            "type": "integer",
-            "minimum": 1,
-        },
-        "eventType": {
-            "type": "string",
-            "enum": ["purchase"],
-        },
-        "eventData": {
-            "type": "object",
-            "properties": {
-                "productId": {
-                    "type": "integer",
-                    "minimum": 1,
-                },
-                "quantity": {
-                    "type": "integer",
-                    "minimum": 1,
-                },
-                "price": {
-                    "type": "integer",
-                    "minimum": 1,
-                },
-            },
-        },
-    },
-    "required": ["userId", "eventType", "eventData"],
-}
-
-EXAMPLE_DATA = {
-    "userId": 123,
-    "eventType": "purchase",
-    "eventData": {"productId": 456, "quantity": 2, "price": 100},
-}
-
 
 class Template(models.Model):
-    data_format = models.JSONField(
-        default=EXAMPLE_SCHEMA,
-        help_text="To learn more about json-schema visit http://json-schema.org",
-    )
+    name = models.CharField(max_length=200)
+
+    def __str__(self) -> str:
+        return self.name
 
     @property
     def schema(self) -> dict:
@@ -68,6 +29,15 @@ class Template(models.Model):
             # All fields are required for now just to simplify the project.
             "required": fields_name,
         }
+
+    def data_map(self, data: dict, data_shape: str) -> dict:
+        """Return a dict of the data but with the shape"""
+        from django.template import Context, Template
+
+        template = Template(data_shape)
+        context = Context(data)
+
+        return template.render(context)
 
 
 class TemplateNestedField(TemplateFieldAbstract):
@@ -153,3 +123,28 @@ class TemplateField(TemplateFieldAbstract):
     class Meta:
         verbose_name = "Field"
         verbose_name_plural = "Fields"
+
+
+class OutbondRequest(models.Model):
+    template = models.ForeignKey(
+        "dynamic_template.Template", on_delete=models.CASCADE, related_name="requests"
+    )
+    # We will only support Post request for now.
+    url = models.URLField(max_length=255)
+
+    EXAMPLE_DATA = """{
+        "userId": {{userId}},
+        "productId": {{eventData.productId}},
+        "quantity": {{eventData.quantity}},
+        "price": {{eventData.price}}
+    }"""
+
+    data_shape = models.TextField(
+        default=EXAMPLE_DATA,
+    )
+
+    def __str__(self) -> str:
+        return self.url
+
+    def map_data(self, data):
+        return self.template.data_map(data, self.data_shape)
