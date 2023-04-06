@@ -39,7 +39,19 @@ class OutbondInline(admin.StackedInline):
 
 @admin.register(Template)
 class TemplateAdmin(admin.ModelAdmin):
+    readonly_fields = ("schema",)
     inlines = (TemplateFieldInline, OutbondInline)
+    fieldsets = (
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "schema",
+                ),
+            },
+        ),
+    )
 
 
 @admin.register(TemplateField)
