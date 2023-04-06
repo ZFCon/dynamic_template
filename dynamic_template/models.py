@@ -1,3 +1,6 @@
+import logging
+
+import requests
 from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -6,6 +9,8 @@ from dynamic_template.abstracts import (
     TemplateFieldAbstract,
     TemplateFieldQuerySetAbstract,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Template(models.Model):
@@ -132,6 +137,7 @@ class OutbondRequest(models.Model):
     )
     # We will only support Post request for now.
     url = models.URLField(max_length=255)
+    headers = models.JSONField(default={"Content-Type": "application/json"})
 
     EXAMPLE_DATA = """{
         "userId": {{userId}},
@@ -139,13 +145,47 @@ class OutbondRequest(models.Model):
         "quantity": {{eventData.quantity}},
         "price": {{eventData.price}}
     }"""
-
-    data_shape = models.TextField(
+    payload_format = models.TextField(
         default=EXAMPLE_DATA,
     )
 
     def __str__(self) -> str:
         return self.url
 
-    def map_data(self, data):
-        return self.template.data_map(data, self.data_shape)
+    def get_payload(self, data):
+        return self.template.data_map(data, self.payload_format)
+
+    def outbond(self, data):
+        # TODO: implement celery here for more effection request and retry ability.
+        try:
+            response = requests.post(
+                self.url, data=self.get_payload(data), headers=self.headers, timeout=30
+            )
+            return response
+        except requests.exceptions.HTTPError as error:
+            logger.error(
+                "OutbondRequest HTTP error occurred: %s",
+                error,
+                extra={
+                    "pk": self.pk,
+                    "url": self.url,
+                },
+            )
+        except requests.exceptions.ConnectTimeout as error:
+            logger.error(
+                "OutbondRequest Timeout error occurred: %s",
+                error,
+                extra={
+                    "pk": self.pk,
+                    "url": self.url,
+                },
+            )
+        except requests.exceptions.ConnectionError as error:
+            logger.error(
+                "OutbondRequest Connection error occurred: %s",
+                error,
+                extra={
+                    "pk": self.pk,
+                    "url": self.url,
+                },
+            )

@@ -4,15 +4,18 @@ from rest_framework.test import APITestCase
 
 from dynamic_template.factories import (
     TemplateFactory,
-    TemplateField,
     TemplateFieldFactory,
     TemplateNestedFieldFactory,
 )
+from dynamic_template.models import OutbondRequest, TemplateField
 
 
 class RequestTest(APITestCase):
     def setUp(self) -> None:
         self.template = TemplateFactory.create()
+        self.outbond_request = OutbondRequest.objects.create(
+            template=self.template, url="https://inventory.example.com/api/update"
+        )
         TemplateFieldFactory.create(
             template=self.template, name="userId", type=TemplateField.Type.NUMBER
         )
@@ -47,7 +50,8 @@ class RequestTest(APITestCase):
         }
         response = self.client.post(url, valid_data, format="json")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, valid_data)
+        self.assertDictEqual(response.data["data"], valid_data["data"])
+        self.assertIsNotNone(response.data.get(self.outbond_request.url))
 
         invalid_data = {
             "data": {
@@ -57,4 +61,5 @@ class RequestTest(APITestCase):
             }
         }
         response = self.client.post(url, invalid_data, format="json")
-        self.assertNotEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIsNone(response.data.get(self.outbond_request.url))
