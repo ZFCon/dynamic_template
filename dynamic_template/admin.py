@@ -1,3 +1,8 @@
 from django.contrib import admin
 
-# Register your models here.
+from dynamic_template.models import Template
+
+
+@admin.register(Template)
+class TemplateAdmin(admin.ModelAdmin):
+    pass
